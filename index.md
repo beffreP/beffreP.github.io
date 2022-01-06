@@ -1,4 +1,4 @@
----
+
 title: "COVID-19 Cases Across Michigan"
 author: "Paige Beffrey"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
@@ -6,7 +6,7 @@ output:
   prettydoc::html_pretty:
     theme: Architect
     highlight: github
----
+
 ```{r libraries, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(tidyquant)
