@@ -1,4 +1,3 @@
-hello world!!!
 ---
 title: "COVID-19 Cases Across Michigan"
 author: "Paige Beffrey"
