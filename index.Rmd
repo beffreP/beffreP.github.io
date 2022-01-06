@@ -22,6 +22,8 @@ library(scales)
 ```{r data, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Load COVID-19 case data from Michigan state site
+#download.file("https://www.michigan.gov/documents/coronavirus/cases_and_Deaths_by_County_and_symptom_onset_or_by_Date_of_Death2021-12-29_744483_7.xlsx") destfile="./rawData/cases_by_county_and_Date.xlsx")
+
 michiganData <- read_xlsx("./rawData/Cases_by_County_and_Date.xlsx")
 
 # Load county census data
