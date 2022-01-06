@@ -1,1 +1,201 @@
-hello world!!!
+---
+title: "COVID-19 Cases Across Michigan"
+author: "Paige Beffrey"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  prettydoc::html_pretty:
+    theme: HPSTR
+    highlight: github
+---
+```{r libraries, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidyquant)
+library(ggpubr)
+library(stringr)
+library(readxl)
+library(choroplethr)
+library(choroplethrMaps)
+library(RColorBrewer)
+library(scales)
+```
+
+```{r data, echo=FALSE, message=FALSE, warning=FALSE}
+# Load COVID-19 case data from Michigan state site
+michiganData <- read_xlsx("./rawData/Cases_by_County_and_Date.xlsx")
+# Load county census data
+censusData <- read_csv("./rawData/csvData.csv")
+# Load county map codes
+data(county.regions)
+# Load population densities
+density <- read_csv("./rawData/density.csv")
+# Load state mortality data
+mortality <- read_csv("./rawData/StateMortalityData.csv")
+```
+
+```{r cleanData, echo=FALSE, message=FALSE, warning=FALSE}
+# Clean up census data set
+censusData <- censusData %>% 
+  rename(County = CTYNAME) %>% 
+  mutate(County = str_remove_all(County," County"))
+censusData$County <- str_to_lower(censusData$County)
+# Lower case county names
+density$County <- str_to_lower(density$County)
+# Get just Michigan county names in map data
+county.regions <- filter(county.regions, state.name == "michigan")
+## Clean up michiganData column names
+michiganData <- michiganData %>% 
+  rename(County = COUNTY, Status = CASE_STATUS) %>% 
+  filter(County != "MDOC", County != "Out-of-State", County != "FCI", County != "Unknown", !is.na(Date))
+michiganData$County <- str_to_lower(michiganData$County)
+michiganData$County <- recode(michiganData$County, "st clair" = "st. clair", "st joseph" = "st. joseph")
+# Combine Detroit City with Wayne County
+detroit <- michiganData %>% filter(County == "detroit city")
+wayne <- michiganData %>% filter(County == "wayne")
+combined <- wayne
+combined$Cases <- combined$Cases + detroit$Cases
+combined$Cases.Cumulative <- combined$Cases.Cumulative + detroit$Cases.Cumulative
+combined$Deaths <- combined$Deaths + detroit$Deaths
+combined$Deaths.Cumulative <- combined$Deaths.Cumulative + detroit$Deaths.Cumulative
+michiganData <- subset(michiganData, County != "detroit city")
+michiganData <- subset(michiganData, County != "wayne")
+michiganData <- rbind(michiganData, combined)
+# Add mapping data to the dataset
+michiganData <- left_join(michiganData, county.regions, by =c("County" = "county.name"))
+# Add census data to the datset
+michiganData <- left_join(michiganData, censusData, by = c("County"))
+# Add population densities
+michiganData <- left_join(michiganData, density, by = c("County"))
+# Get just the confirmed cases
+michiganConfirmedData <- michiganData %>% 
+  filter(Status == "Confirmed")
+write_csv(michiganConfirmedData, "./processedData/michiganConfirmedData.csv")
+# Get just the probable cases
+michiganProbableData <- michiganData %>% 
+  filter(Status == "Probable")
+write_csv(michiganProbableData, "./processedData/michiganProbableData.csv")
+# Add confirmed and probable cases to get total cases
+michiganTotalData <- tibble(County = michiganConfirmedData$County, Date = michiganConfirmedData$Date, Status = "Total", Cases = michiganConfirmedData$Cases + michiganProbableData$Cases, Deaths = michiganConfirmedData$Deaths + michiganProbableData$Deaths, Cases.Cumulative = michiganConfirmedData$Cases.Cumulative + michiganProbableData$Cases.Cumulative, Deaths.Cumulative = michiganConfirmedData$Deaths.Cumulative + michiganProbableData$Deaths.Cumulative, Updated = michiganConfirmedData$Updated, Region = michiganConfirmedData$region, County.FIPS.Character = michiganConfirmedData$county.fips.character, State.Name = michiganConfirmedData$state.name, State.FIPS.Character = michiganConfirmedData$state.fips.character, State.Abb = michiganConfirmedData$state.abb, pop2018 = michiganConfirmedData$pop2018, GrowthRate = michiganConfirmedData$GrowthRate, Density = michiganConfirmedData$Density)
+metroCounty <- c("macomb", "oakland", "wayne")
+michiganTotalData$Detroit <- ifelse(michiganTotalData$County %in% metroCounty, "Yes", "No")
+write_csv(michiganTotalData, "./processedData/michiganTotalData.csv")
+# Summarize total numbers for the three-county metro Detroit area
+metroDetroit <- michiganTotalData %>% 
+  filter(County == "wayne" | County == "oakland" | County == "macomb") %>% 
+  group_by(Date) %>% 
+  mutate(Cases = sum(Cases), Deaths = sum(Deaths), Cases.Cumulative = sum(Cases.Cumulative), Deaths.Cumulative = sum(Deaths.Cumulative))
+metroDetroit <- metroDetroit %>% filter(County == "wayne")
+metroDetroit$County <- "Metro Detroit"
+write_csv(metroDetroit, "./processedData/metroDetroit.csv")
+# Summarize total numbers for the rest of Michigan
+notDetroit <- michiganTotalData %>% 
+  filter(County != "wayne" & County != "oakland" & County != "macomb") %>% 
+  group_by(Date) %>% 
+  mutate(Cases = sum(Cases), Deaths = sum(Deaths), Cases.Cumulative = sum(Cases.Cumulative), Deaths.Cumulative = sum(Deaths.Cumulative))
+notDetroit <- notDetroit %>% filter(County == "mecosta")
+notDetroit$County <- "Not Detroit"
+write_csv(notDetroit, "./processedData/notDetroit.csv")
+# Summarize total numbers for the entire state of Michigan
+total <- michiganTotalData %>% 
+  group_by(Date) %>% 
+  mutate(Cases = sum(Cases), Deaths = sum(Deaths), Cases.Cumulative = sum(Cases.Cumulative), Deaths.Cumulative = sum(Deaths.Cumulative))
+total$County <- "Total"
+write_csv(total, "./processedData/total.csv")
+# Create on comparison set
+compareDetroit <- rbind(total, metroDetroit, notDetroit)
+compareDetroit$Date <- as.POSIXct(as.Date(compareDetroit$Date))
+metroDataCount <- michiganTotalData %>% 
+  group_by(County) %>% 
+  summarize(Cases = max(Cases.Cumulative), Deaths = max(Deaths.Cumulative), Detroit = Detroit, pop2018 = pop2018)
+metroDataCount <- unique(metroDataCount)
+metroDataNorm <- michiganTotalData %>% 
+  group_by(County) %>% 
+  summarize(Cases = max(Cases.Cumulative)/pop2018*100000, Deaths = max(Deaths.Cumulative)/pop2018*100000, Detroit = Detroit)
+metroDataNorm <- unique(metroDataNorm)
+write_csv(metroDataNorm, "./processedData/normData.csv")
+weekly <- michiganTotalData %>% group_by(County, Week = week(Date)) %>% summarise(Weekly.Cases = sum(Cases), Weekly.Deaths = sum(Deaths), Case.Mortality=Weekly.Deaths/Weekly.Cases*100)
+dataSummary <- michiganTotalData %>% 
+  group_by(Region) %>% 
+  rename(region = Region) %>% 
+  summarize(value = max(Deaths.Cumulative), pop = pop2018)
+dataSummary <- unique(dataSummary)
+mortality <- cbind(mortality, metroDataNorm$Deaths)
+mortality <- mortality %>% rename("COVID-19" = "metroDataNorm$Deaths")
+write_csv(mortality, "./processedData/stateMortality.csv")
+```
+
+## Introduction  
+Your introduction
+
+## Data  
+The Michigan COVID-19 data for this document were obtained at https://www.michigan.gov/coronavirus/0,9753,7-406-98163_98173---,00.html in the Public Use Datasets called "Cases by County and Date". The **December 29, 2021** dataset was used to create this report. Michigan county populations were found at https://worldpopulationreview.com/us-counties/states/mi which gives the 2018 census numbers. These were the most recent reliable numbers that I could find at the moment.
+
+## Data munging
+The Michigan COVID-19 dataset had a few peculiarities that needed to be dealt with in order to analyze it easily. There were several "counties" that are not actual Michigan counties that needed to be cleaned. The values for "Out-of-State" are not relevant for my purposes and were removed from the analyses. Likewise, prison populations ("FCI" and "MDOC") cannot be ascribed to particular counties and were, therefore, also removed. Cases with "Unknown" origins were also removed. Finally, the dataset lists "City of Detroit" as a separate entity, those numbers were added back into it's home country (Wayne) to facilitate analysis.
+
+The number of cases and deaths per day are recorded for both confirmed and probable cases. To be as conservative as possible, these numbers were added together to create a total number of cases and deaths per day from each county (along with total cumulative cases and deaths). These total values, confirmed + probable, are used for all of the analyses in this report.
+
+GIS information was left-joined onto the total data. The census data was also left-joined and used to create population-normalized values (cases or deaths per 100,000 population).
+
+## Statewide distribution   
+Describe and explain the distribution below
+
+```{r state_map1, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=12, fig.cap="**Figure 1:** Add a legend here"}
+mapDataA <- michiganTotalData %>% 
+  group_by(Region) %>% 
+  rename(region = Region) %>% 
+  summarize(value = max(Cases.Cumulative))
+mapDataA <- unique(mapDataA)
+mapA <- county_choropleth(mapDataA, state_zoom = "michigan", num_colors = 1)
+mapDataB <- michiganTotalData %>% 
+  group_by(Region) %>% 
+  rename(region = Region) %>% 
+  summarize(value = max(Deaths.Cumulative))
+mapDataB <- unique(mapDataB)
+mapB <- county_choropleth(mapDataB, state_zoom = "michigan", num_colors = 1) 
+ggarrange(mapA, mapB, labels = c("A", "B"), ncol = 1, nrow = 2, font.label = list(size = 28, color = "black", face = "bold", family = NULL))
+```
+## State Overall Trends
+Using the county maps below as an example, create a figure showing cases for the entire state over time.
+
+
+
+## Comparing Counties
+Select three counties that experienced different COVID incidences and compare them below. Change the vertical lines to delimit the initial outbreak, alpha, delta, and omicron variants.
+
+```{r county_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=7, fig.cap="**Figure 2:** Add a legend here"}
+counties <- michiganTotalData %>% 
+  filter(County == "isabella" | County == "mecosta" | County == "ottawa")
+ggplot(counties, aes(x=Date, y=Cases, color=County, fill=County)) +
+  scale_color_manual(values=c('mecosta'="firebrick", 'isabella'="dodgerblue", 'ottawa'="steelblue")) +
+  scale_fill_manual(legend, values=c('mecosta'="firebrick", 'isabella'="dodgerblue", 'ottawa'="steelblue")) +
+  scale_x_datetime(breaks = date_breaks("months"),labels = date_format("%b")) +
+  geom_bar(stat = "identity") +
+  geom_ma(ma_fun = EMA, n = 7, wilder = TRUE, linetype = 1, size = 2) +
+  geom_vline(xintercept = as.POSIXct(as.Date(c("2020-07-04", "2020-08-17", "2020-08-31", "2020-09-07"))), linetype=4) +
+  facet_grid(rows=vars(County), scales="free_y") +
+  theme_bw() +
+  theme(legend.position="none") +
+    theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18,face="bold"))
+```
+
+```{r weekly_county_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=7, fig.cap="**Figure 6:** A comparison of the number of total cases in Isabella, Mecosta, and Ottawa counties by week. The bars indicate total daily cases and the lines are four-week moving averages." }
+counties <- weekly %>% 
+  filter(County == "isabella" | County == "mecosta" | County == "ottawa")
+ggplot(counties, aes(x=Week, y=Weekly.Cases, color=County, fill=County)) +
+    scale_color_manual(values=c('mecosta'="firebrick", 'isabella'="dodgerblue", 'ottawa'="steelblue")) +
+  scale_fill_manual(legend, values=c('mecosta'="firebrick", 'isabella'="dodgerblue", 'ottawa'="steelblue")) +
+  geom_bar(stat = "identity") +
+  geom_ma(ma_fun = EMA, n = 4, wilder = TRUE, linetype = 1, size = 2) +
+  facet_grid(rows=vars(County), scales="free_y") +
+  theme_bw() +
+  theme(legend.position="none") +
+    theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18,face="bold"))
+```
+
+## Conclusions  
+Conclusions go here.
+
+## References
+Any references here.
