@@ -166,9 +166,9 @@ The number of cases and deaths per day are recorded for both confirmed and proba
 GIS information was left-joined onto the total data. The census data was also left-joined and used to create population-normalized values (cases or deaths per 100,000 population).
 
 ## Statewide distribution   
-description here 
+The data found and plotted in Figure 1, can provide you With information on cases and deaths across the state of Michigan. The first map, map A, demonstrates the amount of cases in the state of Michigan. One can easily look at the map and determine majority of cases were in the south eastern part of Michigan. The second map, map B, demonstrates the amount of deaths related to COVID in the state of Michigan. One can determine from this information that deaths are higher in the regions where cases are higher as well.
 
-```{r state_map1, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=12, fig.cap="**Figure 1:** A comparison of the number of deaths across the state of Michigan by week and by region."}
+```{r state_map1, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=12, fig.cap="**Figure 1:** A comparison of the number of deaths and cases across the state of Michigan by week and by region."}
 mapDataA <- michiganTotalData %>% 
   group_by(Region) %>% 
   rename(region = Region) %>% 
