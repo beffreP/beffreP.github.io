@@ -153,7 +153,7 @@ write_csv(mortality, "./processedData/stateMortality.csv")
 ```
 
 ## Introduction  
-This is my introduction paragraph
+This is my introduction paragraph right here is my intro
 
 ## Data  
 The Michigan COVID-19 data for this document were obtained at https://www.michigan.gov/coronavirus/0,9753,7-406-98163_98173---,00.html in the Public Use Datasets called "Cases by County and Date". The **December 29, 2021** dataset was used to create this report. Michigan county populations were found at https://worldpopulationreview.com/us-counties/states/mi which gives the 2018 census numbers. These were the most recent reliable numbers that I could find at the moment.
