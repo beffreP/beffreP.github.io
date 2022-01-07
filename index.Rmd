@@ -153,7 +153,7 @@ write_csv(mortality, "./processedData/stateMortality.csv")
 ```
 
 ## Introduction  
-The data throughout this report will provide you with knowledge on COVID-19 cases across the state of Michigan. A comparison can be made between COVID-19 and the different counties within the state of Michigan. Total deaths across the state and in each county they occurred in can also be identified.
+The data throughout this report will provide you with knowledge on COVID-19 cases across the state of Michigan. A comparison can be made between COVID-19 and the different counties within the state of Michigan. Total deaths across the state and in each county they occurred in can also be identified as well as total number of cases. You will also be able to visualize trends by month and week for 3 specific counties in Michigan: Bay, Saginaw, and Midland counties.
 
 ## Data  
 The Michigan COVID-19 data for this document were obtained at https://www.michigan.gov/coronavirus/0,9753,7-406-98163_98173---,00.html in the Public Use Datasets called "Cases by County and Date". The **December 29, 2021** dataset was used to create this report. Michigan county populations were found at https://worldpopulationreview.com/us-counties/states/mi which gives the 2018 census numbers. These were the most recent reliable numbers that I could find at the moment.
@@ -166,7 +166,7 @@ The number of cases and deaths per day are recorded for both confirmed and proba
 GIS information was left-joined onto the total data. The census data was also left-joined and used to create population-normalized values (cases or deaths per 100,000 population).
 
 ## Statewide distribution   
-The data found and plotted in Figure 1, can provide you With information on cases and deaths across the state of Michigan. The first map, map A, demonstrates the amount of cases in the state of Michigan. One can easily look at the map and determine majority of cases were in the south eastern part of Michigan. The second map, map B, demonstrates the amount of deaths related to COVID in the state of Michigan. One can determine from this information that deaths are higher in the regions where cases are higher as well.
+The data found and plotted in figure 1, can provide you With information on cases and deaths across the state of Michigan. The first map, map A, demonstrates the amount of cases in the state of Michigan. One can easily look at the map and determine majority of cases were in the south eastern part of Michigan. The second map, map B, demonstrates the amount of deaths related to COVID in the state of Michigan. One can determine from this information that deaths are higher in the regions where cases are higher as well.
 
 ```{r state_map1, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=12, fig.cap="**Figure 1:** A comparison of the number of deaths and cases across the state of Michigan by week and by region."}
 mapDataA <- michiganTotalData %>% 
@@ -187,10 +187,11 @@ mapB <- county_choropleth(mapDataB, state_zoom = "michigan", num_colors = 1)
 
 ggarrange(mapA, mapB, labels = c("A", "B"), ncol = 1, nrow = 2, font.label = list(size = 28, color = "black", face = "bold", family = NULL))
 ```
-## State Overall Trends
-description here
 
-```{r state_plot2, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=12, fig.cap="**Figure 1:** A comparison of the number of deaths and cases across the state of Michigan by week and by region."}
+## State Overall Trends
+You can see overral trends of the amount of cases in Michigan between February of 2020 to January of 2022. These cases are plotted as monthly counts and show large peaks that span across a few months. There is a spike in cases in the state of Michiigan from March 2021 to May of 2021. The largest spike in cases was from end of November 2021 to the begining of January 2022.
+
+```{r state_plot2, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=12, fig.cap="**Figure 2:** A comparison of the number of cases across the state of Michigan by month."}
 ggplot(michiganTotalData, aes(x=Date, y=Cases, color="dodgerblue")) + geom_line() + scale_x_datetime(breaks = date_breaks("months"), labels = date_format("%b")) + theme(legend.position = "none")
 
 ```
@@ -231,7 +232,7 @@ ggplot(counties, aes(x=Week, y=Weekly.Cases, color=County, fill=County)) +
 ```
 
 ## Conclusions  
-Conclusions go here.
+In conclusion, COVID-19 can easily be split up into regions to be able to visualize how the state as a whole is being effected. It is important to notice that areas with higher populations of people tend to have more cases than those counties with lower populations. Knowing this information could help lead to ideas on how to better control the spread of COVID-19 throughout the state of Michigan.
 
 ## References
 No additional refrences utilized.
