@@ -196,8 +196,9 @@ ggplot(michiganTotalData, aes(x=Date, y=Cases, color="dodgerblue")) + geom_line(
 ```
 
 ## Comparing Counties
- description
-```{r weekly_county_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=7, fig.cap="**Figure 3:** "}
+Two graphs shown below show comparisons overtime for 3 specific counties. The counties included in the data set are Bay, Saginaw, and Midland counties. Figure 3 shows cases over a monthly period where as the figure 4 shows cases over a weekly period.
+
+```{r weekly_county_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=7, fig.cap="**Figure 3:** A comparison of the number of total cases in Bay, Saginaw, and Midland counties by month. "}
 counties <- michiganTotalData %>% 
   filter(County == "bay" | County == "saginaw" | County == "midland")
 ggplot(counties, aes(x=Date, y=Cases, color=County, fill=County)) +
@@ -214,12 +215,12 @@ ggplot(counties, aes(x=Date, y=Cases, color=County, fill=County)) +
         axis.title=element_text(size=18,face="bold"))
 ```
 
-```{r weekly_county_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=7, fig.cap="**Figure 4:** A comparison of the number of total cases in Isabella, Mecosta, and Ottawa counties by week. The bars indicate total daily cases and the lines are four-week moving averages." }
+```{r weekly_county_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=7, fig.cap="**Figure 4:** A comparison of the number of total cases in Bay, Saginaw, and Midland counties by week. The bars indicate total daily cases and the lines are four-week moving averages." }
 counties <- weekly %>% 
-  filter(County == "isabella" | County == "mecosta" | County == "ottawa")
+  filter(County == "bay" | County == "saginaw" | County == "midland")
 ggplot(counties, aes(x=Week, y=Weekly.Cases, color=County, fill=County)) +
-    scale_color_manual(values=c('mecosta'="firebrick", 'isabella'="dodgerblue", 'ottawa'="steelblue")) +
-  scale_fill_manual(legend, values=c('mecosta'="firebrick", 'isabella'="dodgerblue", 'ottawa'="steelblue")) +
+    scale_color_manual(values=c('bay'="firebrick", 'saginaw'="dodgerblue", 'midland'="steelblue")) +
+  scale_fill_manual(legend, values=c('bay'="firebrick", 'saginaw'="dodgerblue", 'midland'="steelblue")) +
   geom_bar(stat = "identity") +
   geom_ma(ma_fun = EMA, n = 4, wilder = TRUE, linetype = 1, size = 2) +
   facet_grid(rows=vars(County), scales="free_y") +
